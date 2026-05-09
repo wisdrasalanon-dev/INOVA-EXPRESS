@@ -2,6 +2,8 @@
 (function () {
   const slides = document.querySelectorAll('.slide');
   const dotsContainer = document.getElementById('sliderDots');
+  if (!slides.length || !dotsContainer) return;
+
   let current = 0;
   let timer;
 
@@ -10,7 +12,7 @@
     const dot = document.createElement('button');
     dot.className = 'slider-dot' + (i === 0 ? ' active' : '');
     dot.setAttribute('aria-label', 'Slide ' + (i + 1));
-    dot.addEventListener('click', () => goTo(i));
+    dot.addEventListener('click', () => { goTo(i); resetTimer(); });
     dotsContainer.appendChild(dot);
   });
 
@@ -21,18 +23,22 @@
     slides[current].classList.add('prev');
     dots[current].classList.remove('active');
 
-    // Retire la classe prev après la transition
     const old = slides[current];
     setTimeout(() => old.classList.remove('prev'), 1800);
 
     current = (index + slides.length) % slides.length;
-    slides[current].classList.add('active');
+
+    // Force le redémarrage de l'animation Ken Burns à chaque slide
+    const next = slides[current];
+    next.style.animation = 'none';
+    void next.offsetWidth; // reflow forcé
+    next.style.animation = '';
+
+    next.classList.add('active');
     dots[current].classList.add('active');
   }
 
-  function next() { goTo(current + 1); }
-
-  function startTimer() { timer = setInterval(next, 5500); }
+  function startTimer() { timer = setInterval(() => goTo(current + 1), 5500); }
   function resetTimer()  { clearInterval(timer); startTimer(); }
 
   // Pause au survol
@@ -51,20 +57,22 @@
   startTimer();
 })();
 
-// Navbar scroll effect
+// ===== NAVBAR SCROLL =====
 const navbar = document.getElementById('navbar');
 window.addEventListener('scroll', () => {
   navbar.classList.toggle('scrolled', window.scrollY > 40);
   document.getElementById('backToTop').classList.toggle('visible', window.scrollY > 400);
-});
+}, { passive: true });
 
-// Hamburger menu
+// ===== HAMBURGER MENU =====
 const hamburger = document.getElementById('hamburger');
-const navLinks = document.getElementById('navLinks');
+const navLinks  = document.getElementById('navLinks');
+
 hamburger.addEventListener('click', () => {
   hamburger.classList.toggle('open');
   navLinks.classList.toggle('open');
 });
+
 navLinks.querySelectorAll('a').forEach(link => {
   link.addEventListener('click', () => {
     hamburger.classList.remove('open');
@@ -72,65 +80,62 @@ navLinks.querySelectorAll('a').forEach(link => {
   });
 });
 
-// Animated stats counter
+// ===== STATS COUNTER =====
 function animateCounter(el, target, duration = 1800) {
   let start = 0;
   const step = target / (duration / 16);
-  const timer = setInterval(() => {
-    start += step;
-    if (start >= target) { start = target; clearInterval(timer); }
+  const id = setInterval(() => {
+    start = Math.min(start + step, target);
     el.textContent = Math.floor(start).toLocaleString('fr-FR');
+    if (start >= target) clearInterval(id);
   }, 16);
 }
 
 const statsSection = document.getElementById('stats');
 let statsAnimated = false;
-const statsObserver = new IntersectionObserver(entries => {
+new IntersectionObserver(entries => {
   if (entries[0].isIntersecting && !statsAnimated) {
     statsAnimated = true;
     document.querySelectorAll('.stat-number').forEach(el => {
       animateCounter(el, parseInt(el.dataset.target));
     });
   }
-}, { threshold: 0.4 });
-statsObserver.observe(statsSection);
+}, { threshold: 0.2 }).observe(statsSection);
 
-// Card entrance animations
+// ===== CARD ENTRANCE ANIMATIONS =====
+// Utilise un compteur global pour que le stagger soit correct sur Vercel
 const cards = document.querySelectorAll('.card, .contact-card');
+let cardVisibleCount = 0;
+
 const cardObserver = new IntersectionObserver(entries => {
-  entries.forEach((entry, i) => {
+  entries.forEach(entry => {
     if (entry.isIntersecting) {
+      const delay = (cardVisibleCount % 6) * 90;
+      cardVisibleCount++;
       setTimeout(() => {
-        entry.target.style.opacity = '1';
-        entry.target.style.transform = 'translateY(0)';
-      }, i * 80);
+        entry.target.classList.add('card-visible');
+      }, delay);
       cardObserver.unobserve(entry.target);
     }
   });
-}, { threshold: 0.1 });
+}, { threshold: 0.08 });
 
 cards.forEach(card => {
-  card.style.opacity = '0';
-  card.style.transform = 'translateY(28px)';
-  card.style.transition = 'opacity 0.5s ease, transform 0.5s ease, box-shadow 0.3s ease, border-color 0.3s ease';
+  card.classList.add('card-hidden');
   cardObserver.observe(card);
 });
 
-// Quote form validation & submit
-const devisForm = document.getElementById('devisForm');
+// ===== DEVIS FORM =====
+const devisForm  = document.getElementById('devisForm');
 const formSuccess = document.getElementById('formSuccess');
 
 devisForm.addEventListener('submit', e => {
   e.preventDefault();
-  const required = devisForm.querySelectorAll('[required]');
   let valid = true;
 
-  required.forEach(field => {
+  devisForm.querySelectorAll('[required]').forEach(field => {
     field.classList.remove('error');
-    if (!field.value.trim()) {
-      field.classList.add('error');
-      valid = false;
-    }
+    if (!field.value.trim()) { field.classList.add('error'); valid = false; }
   });
 
   if (!valid) return;
@@ -146,19 +151,17 @@ devisForm.addEventListener('submit', e => {
   }, 1400);
 });
 
-// Remove error state on input
 devisForm.querySelectorAll('input, select, textarea').forEach(field => {
   field.addEventListener('input', () => field.classList.remove('error'));
 });
 
-// Smooth scroll for anchor links
+// ===== SMOOTH SCROLL =====
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
   anchor.addEventListener('click', e => {
     const target = document.querySelector(anchor.getAttribute('href'));
     if (target) {
       e.preventDefault();
-      const offset = 80;
-      window.scrollTo({ top: target.offsetTop - offset, behavior: 'smooth' });
+      window.scrollTo({ top: target.offsetTop - 80, behavior: 'smooth' });
     }
   });
 });
