@@ -187,24 +187,15 @@ body {
   background-size: cover;
   background-position: center;
   opacity: 0;
-  transition: opacity 1.8s ease-in-out;
   transform: scale(1.08);
+  /* transition gère à la fois le fondu ET le zoom Ken Burns */
+  transition: opacity 1.5s ease-in-out, transform 7s ease-out;
   will-change: opacity, transform;
 }
 
 .slide.active {
   opacity: 1;
-  animation: kenburns 7s ease-out forwards;
-}
-
-.slide.prev {
-  opacity: 0;
-  animation: none;
-}
-
-@keyframes kenburns {
-  from { transform: scale(1.08); }
-  to   { transform: scale(1.00); }
+  transform: scale(1.00);
 }
 
 /* Overlay bleu marine + dégradé orange subtil */

@@ -20,21 +20,11 @@
 
   function goTo(index) {
     slides[current].classList.remove('active');
-    slides[current].classList.add('prev');
     dots[current].classList.remove('active');
-
-    const old = slides[current];
-    setTimeout(() => old.classList.remove('prev'), 1800);
 
     current = (index + slides.length) % slides.length;
 
-    // Force le redémarrage de l'animation Ken Burns à chaque slide
-    const next = slides[current];
-    next.style.animation = 'none';
-    void next.offsetWidth; // reflow forcé
-    next.style.animation = '';
-
-    next.classList.add('active');
+    slides[current].classList.add('active');
     dots[current].classList.add('active');
   }
 
